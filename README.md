@@ -6,13 +6,13 @@
 
 ---
 
-Intelligently split photo files (RAW, HIF, XMP, etc.) within a folder into evenly distributed subfolders based on photo IDs. Supports SMB shares, dry-run preview, and re-splitting of existing partitions. Perfect for distributing large photo collections across multiple drives or network shares.
+Split files in an oversized folder into evenly distributed subfolders by filename — built for folders too large to load smoothly in Finder / Explorer. Works for any file type: photos, documents, archives, logs, datasets, and more. Supports SMB shares, dry-run preview, and re-splitting of existing partitions.
 
 ## Features
 
-- **Photo-aware grouping** — Files sharing the same photo ID (e.g., `DSC00001.ARW`, `DSC00001.HIF`, `DSC00001.XMP`) stay together
-- **Natural sort** — `DSC2` sorts before `DSC10`, not lexicographically
-- **Even distribution** — Photo groups are spread as evenly as possible across target folders
+- **Name-based grouping** — Related files sharing the same prefix+number (e.g., `report_001.pdf`, `report_001.xlsx`) stay together
+- **Natural sort** — `file2` sorts before `file10`, not lexicographically
+- **Even distribution** — File groups are spread as evenly as possible across target folders
 - **Dry-run mode** — Preview the result without moving any files
 - **Re-splitting** — Already-split `part_*` folders are detected and can be re-distributed
 - **Recursive scanning** — Optionally scan the entire directory tree
@@ -20,6 +20,14 @@ Intelligently split photo files (RAW, HIF, XMP, etc.) within a folder into evenl
 - **macOS junk filtering** — Automatically skips `.DS_Store` and `._*` files
 - **Duplicate protection** — If a filename already exists in the target, renames to `xxx__dupN.ext`
 - **Empty folder cleanup** — Removes empty old `part_*` folders after redistribution
+
+## Use Cases
+
+- **Oversized folders** — A single folder with 10,000+ files that takes forever to open? Split it into smaller chunks.
+- **Photo collections** — Distribute RAW/ARW/HIF/XMP files across multiple drives or network shares.
+- **Log archives** — Partition millions of log files by name range for easier browsing.
+- **Dataset preparation** — Split training data into balanced shards.
+- **Any large flat folder** — If a folder is too big to load, SplitFolder can help.
 
 ## Requirements
 
@@ -37,28 +45,28 @@ cd SplitFolder
 ## Usage
 
 ```bash
-python3 main.py /path/to/source/folder -n 10
+python3 main.py /path/to/large/folder -n 10
 ```
 
-Splits all photo files into 10 subfolders: `part_001_*`, `part_002_*`, ..., `part_010_*`.
+Splits all files into 10 subfolders: `part_001_*`, `part_002_*`, ..., `part_010_*`.
 
 ### Examples
 
 ```bash
 # Split into 5 parts with dry-run preview
-python3 main.py /Volumes/Media/DCIM -n 5 --dry-run
+python3 main.py /Volumes/Data/Archive -n 5 --dry-run
 
 # Split into 20 parts with custom prefix
-python3 main.py /Volumes/Media/DCIM -n 20 --prefix batch_
+python3 main.py /Volumes/Data/Archive -n 20 --prefix batch_
 
 # Recursively scan all subdirectories
-python3 main.py /Volumes/Media/DCIM -n 10 --recursive
+python3 main.py /Volumes/Data/Archive -n 10 --recursive
 
 # Re-split existing part folders (detected by default)
-python3 main.py /Volumes/Media/DCIM -n 40
+python3 main.py /Volumes/Data/Archive -n 40
 
 # Skip empty folder cleanup
-python3 main.py /Volumes/Media/DCIM -n 10 --no-clean-empty
+python3 main.py /Volumes/Data/Archive -n 10 --no-clean-empty
 ```
 
 ### Options
@@ -75,7 +83,7 @@ python3 main.py /Volumes/Media/DCIM -n 10 --no-clean-empty
 ## How It Works
 
 1. **Scan** — Collects all files from the source folder (and optionally subdirectories)
-2. **Group** — Groups files by photo ID (e.g., `DSC00001.ARW` + `DSC00001.XMP` → group `DSC00001`)
+2. **Group** — Groups files by their name prefix+number (e.g., `report_001.pdf` + `report_001.xlsx` → group `report_001`)
 3. **Sort** — Sorts groups using natural number ordering
 4. **Distribute** — Evenly spreads groups across N target folders
 5. **Move** — Moves files into their target folders, preserving filenames
@@ -84,14 +92,14 @@ python3 main.py /Volumes/Media/DCIM -n 10 --no-clean-empty
 ### Folder Naming Convention
 
 ```
-part_001_DSC00001-DSC00500/
-part_002_DSC00501-DSC01000/
-part_003_DSC01001-DSC01500/
+part_001_report_0001-report_0500/
+part_002_report_0501-report_1000/
+part_003_report_1001-report_1500/
 ...
 ```
 
-Each folder name shows the range of photo IDs it contains.
+Each folder name shows the range of file groups it contains.
 
 ## License
 
-MIT License.
+[Apache License 2.0](LICENSE)

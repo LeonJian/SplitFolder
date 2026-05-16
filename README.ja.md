@@ -1,4 +1,4 @@
-# SplitFolder — スマート写真フォルダ分割ツール
+# SplitFolder — 肥大フォルダのスマート分割ツール
 
 <p align="center">
   <a href="README.md">English</a> | <a href="README.zh-TW.md">繁體中文</a> | <a href="README.zh-CN.md">简体中文</a> | <a href="README.es.md">Español</a> | <a href="README.de.md">Deutsch</a>
@@ -6,13 +6,13 @@
 
 ---
 
-フォルダ内の写真ファイル（RAW、HIF、XMP など）を写真番号に基づいて均等に複数のサブフォルダに分割します。SMB ネットワーク共有、ドライランプレビュー、既存パーティションの再分割をサポート。大量の写真コレクションを複数のドライブやネットワークに分散するのに最適です。
+肥大化してファイル数が多すぎるフォルダを、ファイル名に基づいて均等に複数のサブフォルダに分割します。Finder / エクスプローラーで開くのに時間がかかる「大きすぎるフォルダ」問題を解決するために作られました。写真、文書、アーカイブ、ログ、データセットなど、あらゆるファイルタイプに対応。SMB ネットワーク共有、ドライランプレビュー、既存パーティションの再分割をサポート。
 
 ## 機能
 
-- **写真認識グルーピング** — 同じ写真 ID の異なる拡張子（`DSC00001.ARW`、`DSC00001.HIF`、`DSC00001.XMP` など）を一緒に保持
-- **自然ソート** — `DSC2` が `DSC10` より前にソートされます（文字列辞書順ではありません）
-- **均等分配** — 写真グループを可能な限り均等に各フォルダに分散
+- **ファイル名グルーピング** — 同じ接頭辞+番号を持つ関連ファイル（例：`report_001.pdf`、`report_001.xlsx`）を一緒に保持
+- **自然ソート** — `file2` が `file10` より前にソートされます（文字列辞書順ではありません）
+- **均等分配** — ファイルグループを可能な限り均等に各フォルダに分散
 - **ドライランモード** — `--dry-run` でファイルを移動せずに結果をプレビュー
 - **再分割対応** — 既存の `part_*` フォルダを自動検出し、再分配が可能
 - **再帰的スキャン** — ディレクトリ全体を再帰的にスキャン可能
@@ -20,6 +20,14 @@
 - **macOS ジャンクファイルフィルタ** — `.DS_Store` や `._*` ファイルを自動スキップ
 - **重複保護** — ターゲットに同名ファイルが存在する場合、`xxx__dupN.ext` にリネーム
 - **空フォルダクリーンアップ** — 再分配後に空の古い `part_*` フォルダを自動削除
+
+## ユースケース
+
+- **肥大フォルダ** — 1万ファイル以上入ったフォルダが重すぎて開けない？小さく分割すれば快適に。
+- **写真コレクション** — RAW/ARW/HIF/XMP を複数のドライブやネットワークに分散。
+- **ログアーカイブ** — 数百万のログファイルを名前範囲で分割し、検索しやすく。
+- **データセット準備** — トレーニングデータをバランスの取れたシャードに分割。
+- **あらゆるフラットな大フォルダ** — フォルダが大きすぎて読み込めないなら、SplitFolder が役立ちます。
 
 ## 要件
 
@@ -37,28 +45,28 @@ cd SplitFolder
 ## 使い方
 
 ```bash
-python3 main.py /path/to/source/folder -n 10
+python3 main.py /path/to/large/folder -n 10
 ```
 
-ソースフォルダの全写真ファイルを 10 個のサブフォルダに分割：`part_001_*`、`part_002_*`……`part_010_*`。
+ソースフォルダの全ファイルを 10 個のサブフォルダに分割：`part_001_*`、`part_002_*`……`part_010_*`。
 
 ### 使用例
 
 ```bash
 # 5 分割、ドライランでプレビュー
-python3 main.py /Volumes/Media/DCIM -n 5 --dry-run
+python3 main.py /Volumes/Data/Archive -n 5 --dry-run
 
 # 20 分割、カスタムプレフィックス
-python3 main.py /Volumes/Media/DCIM -n 20 --prefix batch_
+python3 main.py /Volumes/Data/Archive -n 20 --prefix batch_
 
 # 全サブディレクトリを再帰的にスキャン
-python3 main.py /Volumes/Media/DCIM -n 10 --recursive
+python3 main.py /Volumes/Data/Archive -n 10 --recursive
 
 # 既存の part フォルダを再分割（デフォルトで自動検出）
-python3 main.py /Volumes/Media/DCIM -n 40
+python3 main.py /Volumes/Data/Archive -n 40
 
 # 空フォルダのクリーンアップをスキップ
-python3 main.py /Volumes/Media/DCIM -n 10 --no-clean-empty
+python3 main.py /Volumes/Data/Archive -n 10 --no-clean-empty
 ```
 
 ### コマンドラインオプション
@@ -75,23 +83,23 @@ python3 main.py /Volumes/Media/DCIM -n 10 --no-clean-empty
 ## 動作の仕組み
 
 1. **スキャン** — ソースフォルダ（およびオプションでサブディレクトリ）から全ファイルを収集
-2. **グルーピング** — 写真 ID でファイルをグループ化（例：`DSC00001.ARW` + `DSC00001.XMP` → グループ `DSC00001`）
+2. **グルーピング** — ファイル名の接頭辞+番号でグループ化（例：`report_001.pdf` + `report_001.xlsx` → グループ `report_001`）
 3. **ソート** — 自然数値順でソート
-4. **分配** — 写真グループを N 個のフォルダに均等に分散
+4. **分配** — ファイルグループを N 個のフォルダに均等に分散
 5. **移動** — ファイルをターゲットフォルダに移動し、ファイル名を保持
 6. **クリーンアップ** — 空になった古い `part_*` フォルダを削除
 
 ### フォルダ命名規則
 
 ```
-part_001_DSC00001-DSC00500/
-part_002_DSC00501-DSC01000/
-part_003_DSC01001-DSC01500/
+part_001_report_0001-report_0500/
+part_002_report_0501-report_1000/
+part_003_report_1001-report_1500/
 ...
 ```
 
-各フォルダ名には含まれる写真番号の範囲が表示され、内容を一目で識別できます。
+各フォルダ名には含まれるファイル番号の範囲が表示され、内容を一目で識別できます。
 
 ## ライセンス
 
-MIT License。
+[Apache License 2.0](LICENSE)

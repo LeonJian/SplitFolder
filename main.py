@@ -32,13 +32,13 @@ def is_part_folder(path: Path, prefix: str) -> bool:
     return re.match(pattern, path.name) is not None
 
 
-def extract_photo_id(stem: str) -> str:
+def extract_group_key(stem: str) -> str:
     """
-    将 DSC00001.ARW / DSC00001.HIF / DSC00001.XMP 归为 DSC00001。
-    对普通文件则使用 stem 本身。
+    将同一组的关联文件归类到同一个 key。
+    例如 DSC00001.ARW / DSC00001.HIF / DSC00001.XMP → DSC00001。
+    对于无法提取编号前缀的文件，使用 stem 本身作为 key。
     """
 
-    # 常见相机命名：DSC00001, C0001, IMG_0001, _DSC1234 等
     m = re.match(r"^([A-Za-z_]*\d+)", stem)
 
     if m:
@@ -47,15 +47,15 @@ def extract_photo_id(stem: str) -> str:
     return stem
 
 
-def sort_photo_key(photo_id: str):
+def sort_group_key(group_key: str):
     """
-    让 DSC2 排在 DSC10 前面，而不是纯字符串排序。
+    自然排序：让 file2 排在 file10 前面，而不是纯字符串排序。
     """
 
-    m = re.match(r"^(.*?)(\d+)$", photo_id)
+    m = re.match(r"^(.*?)(\d+)$", group_key)
 
     if not m:
-        return (photo_id, -1)
+        return (group_key, -1)
 
     prefix = m.group(1)
     number = int(m.group(2))
@@ -207,8 +207,8 @@ def cleanup_empty_part_folders(source: Path, prefix: str, dry_run: bool):
     return removed
 
 
-def build_batches(photo_groups, parts: int, source: Path, prefix: str):
-    total_groups = len(photo_groups)
+def build_batches(file_groups, parts: int, source: Path, prefix: str):
+    total_groups = len(file_groups)
 
     per_part = math.ceil(total_groups / parts)
 
@@ -221,7 +221,7 @@ def build_batches(photo_groups, parts: int, source: Path, prefix: str):
         if start >= total_groups:
             break
 
-        batch = photo_groups[start:end]
+        batch = file_groups[start:end]
 
         first = batch[0][0]
         last = batch[-1][0]
@@ -245,7 +245,7 @@ def build_batches(photo_groups, parts: int, source: Path, prefix: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="将文件夹内文件按照片编号均分到多个文件夹，支持 SMB、dry-run、重复重分。"
+        description="将过大文件夹内的文件按名称均分到多个子文件夹，解决文件夹过大加载缓慢的问题。支持 SMB、dry-run、重复重分。"
     )
 
     parser.add_argument("source", help="源文件夹路径，例如 /Volumes/home/Media/DCIM")
@@ -290,21 +290,21 @@ def main():
     groups = defaultdict(list)
 
     for file in files:
-        photo_id = extract_photo_id(file.stem)
-        groups[photo_id].append(file)
+        group_key = extract_group_key(file.stem)
+        groups[group_key].append(file)
 
-    photo_groups = sorted(groups.items(), key=lambda x: sort_photo_key(x[0]))
+    file_groups = sorted(groups.items(), key=lambda x: sort_group_key(x[0]))
 
-    total_groups = len(photo_groups)
+    total_groups = len(file_groups)
     total_files = len(files)
 
     batches, per_part = build_batches(
-        photo_groups=photo_groups, parts=args.parts, source=source, prefix=args.prefix
+        file_groups=file_groups, parts=args.parts, source=source, prefix=args.prefix
     )
 
     print()
     print(f"源文件夹: {source}")
-    print(f"照片组数量: {total_groups}")
+    print(f"文件组数量: {total_groups}")
     print(f"文件总数: {total_files}")
     print(f"目标份数: {args.parts}")
     print(f"实际创建份数: {len(batches)}")
